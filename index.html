@@ -5,8 +5,266 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
+    <style>
+        #game-grid {
+  display: inline-block;
+  background: #bbada0;
+  font-family: 'Roboto', sans-serif;
+  font-weight: bold;
+  font-size: 30px;
+  border-radius: 2px;
+  padding: 3px;
+}
+
+#game-grid .row {
+  display: flex;
+}
+
+#game-grid .row .cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #cdc0b4;
+  width: 100px;
+  height: 100px;
+  margin: 5px;
+  border-radius: 3px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+}
+
+    </style>
 </head>
 <body>
-    my page test
+   <script>
+    class gameTile {
+  constructor(x, y) {
+    this.x = x;
+    this.y = y;
+    this.merged = false;
+    this.value = "";
+  }
+  tileID() {
+    return `[data-coord="{x:${this.x},y:${this.y}}"]`;
+  }
+  tileStyles() {
+    let style = {
+      2: {
+        color: "#7f6e61",
+        background: "#eee4da"
+      },
+      4: {
+        color: "#776e65",
+        background: "#ede0c8"
+      },
+      8: {
+        color: "#ede0c8",
+        background: "#f2b179"
+      },
+      16: {
+        color: "#f9faf8",
+        background: "#f59563"
+      },
+      32: {
+        color: "#f9fffc",
+        background: "#f67c5f"
+      },
+      64: {
+        color: "#f9ffff",
+        background: "#ea5a38"
+      },
+      128: {
+        color: "#f9f4f1",
+        background: "#efce71"
+      },
+      256: {
+        color: "#fbfff3",
+        background: "#f1d33f"
+      },
+      512: {
+        color: "#fbf5e9",
+        background: "#ecc850"
+      },
+      1024: {
+        color: "#ffffff",
+        background: "#e3ba14"
+      },
+      2048: {
+        color: "#ffffff",
+        background: "#ecc402"
+      }
+    }
+
+    return style;
+  }
+}
+
+class gameGrid {
+  constructor(ele) {
+    this.element = ele;
+    this.tiles = {};
+    this._initialiseBoard();
+  }
+
+  _addNumber() {
+    let emptyTiles = this._emptyCellArray();
+
+    if (emptyTiles.length === 0)
+      return;
+
+    let i = Math.floor(Math.random() * Math.floor(emptyTiles.length - 1));
+    let value = Math.random() > 0.1 ? 2 : 4;
+
+    emptyTiles[i].value = value;
+    this.updateTiles();
+  }
+
+  _initialiseBoard() {
+    for (let y = 3; y >= 0; y--) {
+      let row = document.createElement("div");
+      row.classList.add("row");
+      for (let x = 0; x < 4; x++) {
+        let cell = document.createElement("div");
+        cell.classList.add("cell");
+        cell.setAttribute('data-coord', `{x:${x},y:${y}}`);
+        row.appendChild(cell);
+        this._initialiseTiles(x, y);
+      }
+      this.element.appendChild(row);
+    }
+    this.updateTiles();
+    this._addNumber();
+    this._addNumber();
+  }
+
+  _initialiseTiles(x, y) {
+    this.tiles[`${x},${y}`] = new gameTile(x, y);
+  }
+
+  _emptyCellArray() {
+    let array = [];
+    for (let key of Object.keys(this.tiles)) {
+      let tile = this.tiles[key];
+      if (tile.value === "") {
+        array.push(tile);
+      }
+    }
+    return array;
+  }
+  
+  slideX(dir) {
+  	let left = dir == "left";
+    let moveTaken = true;
+    let addNumber = false;
+    while(moveTaken) {
+    	moveTaken = false;
+      for (let y = 0; y < 4; y++) {
+        for (let x = !left?2:1; !left?x >= 0:x < 4; !left?x--:x++) {
+          let currentTile = this.tiles[`${x},${y}`];
+          let nextTile = this.tiles[`${!left?x+1:x-1},${y}`];
+          if(currentTile.value == "")
+          	continue;
+
+          if (nextTile.value == "") {
+            nextTile.value = currentTile.value;
+            currentTile.value = "";
+            moveTaken = true;
+            addNumber = true;
+          } else if (nextTile.value == currentTile.value && !nextTile.merged && !currentTile.merged) {
+            nextTile.value += currentTile.value;
+            nextTile.merged = true;
+            currentTile.value = "";
+            moveTaken = true;
+            addNumber = true;
+          }
+        }
+      }
+    }
+    if (addNumber) {
+      this._addNumber();
+    } else {
+      this.updateTiles();
+    }
+  }
+
+  slideY(dir) {
+  	let up = dir == "up";
+    let moveTaken = true;
+    let addNumber = false;
+    while(moveTaken) {
+    	moveTaken = false;
+      for (let x = 0; x < 4; x++) {
+        for (let y = up?2:1; up?y >= 0:y < 4; up?y--:y++) {
+          let currentTile = this.tiles[`${x},${y}`];
+          let nextTile = this.tiles[`${x},${up?y+1:y-1}`];
+          if(currentTile.value == "")
+          	continue;
+
+          if (nextTile.value == "") {
+            nextTile.value = currentTile.value;
+            currentTile.value = "";
+            moveTaken = true;
+            addNumber = true;
+          } else if (nextTile.value == currentTile.value && !nextTile.merged && !currentTile.merged) {
+            nextTile.value += currentTile.value;
+            nextTile.merged = true;
+            currentTile.value = "";
+            moveTaken = true;
+            addNumber = true;
+          }
+        }
+      }
+    }
+    if (addNumber) {
+      this._addNumber();
+    } else {
+      this.updateTiles();
+    }
+  }
+
+  updateTiles() {
+    for (let key of Object.keys(this.tiles)) {
+      let tile = this.tiles[key];
+      let cell = this.element.querySelector(tile.tileID());
+      tile.merged = false;
+      let tileStyles = tile.tileStyles()[tile.value];
+      cell.innerHTML = tile.value;
+      if (tileStyles !== undefined) {
+        cell.style.background = tileStyles.background;
+        cell.style.color = tileStyles.color;
+      } else {
+        cell.removeAttribute('style');
+      }
+    }
+  }
+}
+
+let gameContainer = document.createElement("div");
+gameContainer.setAttribute('id','game-grid');
+let game = new gameGrid(gameContainer);
+
+document.body.appendChild(gameContainer);
+
+document.body.addEventListener('keydown', e => {
+  switch (e.keyCode) {
+    case 37:
+      game.slideX('left');
+      e.preventDefault();
+      break;
+    case 38:
+      game.slideY('up');
+      e.preventDefault();
+      break;
+    case 39:
+      game.slideX('right');
+      e.preventDefault();
+      break;
+    case 40:
+      game.slideY('down');
+      e.preventDefault();
+      break;
+  }
+});
+
+   </script>
 </body>
 </html>
